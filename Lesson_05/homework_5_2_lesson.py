@@ -34,3 +34,5 @@ indices_to_check = [6, 10, 13]
 age_check = all(people_records[i][2] >= 30 for i in indices_to_check)
 
 print("\nAll people at indices 6, 10, 13 have age >= 30:", age_check)
+
+
