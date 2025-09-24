@@ -1,0 +1,18 @@
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Логування ініціалізовано. Пишемо у консоль і файл test_search.log
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Аутентифікація: POST http://127.0.0.1:8080/auth як test_user
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Відповідь /auth: 200 | body: {
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1ODc0MTQwNSwianRpIjoiYTllMDZhNTEtN2RhMC00NWY2LWI2MjctZmNhYzJiMTY4NjYyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlc3RfdXNlciIsIm5iZiI6MTc1ODc0MTQwNSwiY3NyZiI6IjI1NDAwNGUyLTIxZTUtNGY4Mi04MGRiLTQ0NzY2NGJkODY4ZiIsImV4cCI6MTc1ODc0MjMwNX0.d7gPbHUqFHtxGLA1uKcj7u0I8aRmIDsY4mybtifBuHw"
+}
+
+[2025-09-24 21:16:45] [INFO] cars_api_tests: GET http://127.0.0.1:8080/cars params={'sort_by': 'price', 'limit': 3}
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Відповідь /cars: 200 | 291 байт
+[2025-09-24 21:16:45] [INFO] cars_api_tests: GET http://127.0.0.1:8080/cars params={'sort_by': 'year', 'limit': 5}
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Відповідь /cars: 200 | 472 байт
+[2025-09-24 21:16:45] [INFO] cars_api_tests: GET http://127.0.0.1:8080/cars params={'sort_by': 'engine_volume', 'limit': 10}
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Відповідь /cars: 200 | 950 байт
+[2025-09-24 21:16:45] [INFO] cars_api_tests: GET http://127.0.0.1:8080/cars params={'sort_by': 'brand', 'limit': 4}
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Відповідь /cars: 200 | 379 байт
+[2025-09-24 21:16:45] [INFO] cars_api_tests: GET http://127.0.0.1:8080/cars params={'limit': 7}
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Відповідь /cars: 200 | 667 байт
+[2025-09-24 21:16:45] [INFO] cars_api_tests: GET http://127.0.0.1:8080/cars params={'sort_by': 'nonexistent', 'limit': 6}
+[2025-09-24 21:16:45] [INFO] cars_api_tests: Відповідь /cars: 200 | 569 байт
