@@ -1,0 +1,27 @@
+XPath (робота з текстом і атрибутами)
+
+1. //header[contains(@class,'header') and contains(@class,'bg-basic-dark')] - хедер
+2. //header//a[contains(@class,'header_logo')] - логотип (лінк)
+3. //header//a[contains(@class,'header_logo')]//*[name()='svg'] - SVG усередині лого
+4. //header//nav[contains(@class,'header_nav')] - контейнер навігації
+5. //header//nav//*[self::a or self::button][contains(@class,'header-link')] - усі пункти меню (a+button)
+6. //header//a[contains(@class,'header-link') and contains(@class,'-active')] - активний пункт (Home)
+7. //header//nav[contains(@class,'header_nav')]//a[normalize-space()='Home'and (@href='/' or @routerlink='/')and contains(@class,'header-link')] - Home по href+текст
+8. //header//button[contains(@class,'header-link')][@appscrollto='aboutSection' and normalize-space()='About'] - About (button + атрибут + текст)
+9. //header//button[contains(@class,'header-link')][@appscrollto='contactsSection' and normalize-space()='Contacts'] - Contacts (button)
+10. //section[contains(@class,'hero')]//button[contains(@class,'hero-descriptor_btn')] - Кнопка Sign up (hero-section)
+11. //header//*[self::a or self::button][normalize-space()='Guest log in'] - Guest log in
+12. //section[contains(@class,'hero') and contains(@class,'section')] - Hero section
+13. //section[contains(@class,'hero')]//h1[contains(@class,'hero-descriptor_title') and normalize-space()='Do more!'] - заголовок “Do more!”
+14. //section[contains(@class,'hero')]//p[contains(@class,'hero-descriptor_descr') and contains(@class,'lead')] - підзаголовок
+15. //section[contains(@class,'hero')]//button[contains(@class,'hero-descriptor_btn') and contains(@class,'btn-primary') and normalize-space()='Sign up'] - кнопка Sign up,більш унікальний локатор з текстом
+16. //section[contains(@class,'hero')]//iframe[contains(@class,'hero-video_frame') or contains(@src,'youtube.com')] - iframe з відео
+17. //*[@appscrollto='aboutSection'] - будь-який елемент, що скролить до About (атрибут)
+18. //*[@appscrollto='contactsSection'] - будь-який елемент, що скролить до Contacts
+19. //div[@id='aboutSection' and contains(@class,'section') and contains(@class,'about')] - секція About
+20. //div[@id='aboutSection']//img[contains(@class,'about-picture_img') and contains(@src,'/assets/images/homepage/')] - будь-яка картинка блоку About
+21. //div[@id='aboutSection']//p[contains(@class,'about-block_title') and contains(@class,'h2') and normalize-space()='Log fuel expenses'] - заголовок першої card (інформ.блоку)
+22. //div[@id='aboutSection']//p[contains(@class,'about-block_title') and contains(@class,'h2') and normalize-space()='Instructions and manuals'] - заголовок другої card
+23. //div[@id='aboutSection']//p[contains(@class,'about-block_descr') and contains(@class,'lead')] - описи в card (card - структурований інфоблок)
+24. //div[@id='contactsSection' and contains(@class,'section') and contains(@class,'contacts')] - секція Contacts
+25. //app-footer - Angular-компонент футера
