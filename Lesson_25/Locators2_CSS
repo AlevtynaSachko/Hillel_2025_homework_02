@@ -1,0 +1,27 @@
+CSS (без пошуку по тексту)
+
+1. header.header.bg-basic-dark - хедер
+2. header .container - контейнер у хедері
+3. header .header_left - ліва частина хедера
+4. header .header_logo - лінк-логотип
+5. header .header_logo svg - SVG логотипу
+6. header nav.header_nav - навігація
+7. header nav.header_nav .header-link - усі пункти меню
+8. header nav.header_nav a.header-link.-active - активний пункт(тобто,де ми знаходимось, в нашому випадку - Home)
+9. header nav.header_nav a.header-link[href="/"] - Home по href,тобто незалежно,активний Home чи ні
+10. header nav.header_nav button.header-link[appscrollto="aboutSection"] - About (button)
+11. header nav.header_nav button.header-link[appscrollto="contactsSection"] - Contacts (button)
+12. header nav.header_nav .header-link + .header-link - сусідній пункт після першого (перевірка структури)
+13. header nav.header_nav .header-link:first-child - перший пункт (Home)
+14. .section.hero - hero-section
+15. .section.hero .hero-descriptor_title.display-2 - H1 “Do more!”
+16. .section.hero .hero-descriptor_descr.lead - підзаголовок
+17. .section.hero .hero-descriptor_btn.btn.btn-primary - кнопка Sign up
+18. .section.hero .hero-video_frame[src*="youtube.com"] — iframe youtube
+19. #aboutSection.section.about - секція About
+20. #aboutSection .about-block_picture .about-picture_img[src*="/assets/images/homepage/"] - картинки About
+21. #aboutSection .about-block_title.h2 - заголовки інф блоку (card) About
+22. #aboutSection .about-block_descr.lead - описи інф блоку About
+23. #aboutSection .col-12.col-lg-6:nth-of-type(2) .about-block_title.h2 - заголовок другої card
+24. #contactsSection.section.contacts - Contacts секція
+25. app-footer - Angular-компонент футера
