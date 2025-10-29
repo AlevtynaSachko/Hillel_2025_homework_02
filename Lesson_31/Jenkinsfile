@@ -1,0 +1,132 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '15'))
+  }
+
+  triggers {
+    // Автозапуск після пуша або резервно кожні 30 хв
+    pollSCM('H/30 * * * *')
+  }
+
+  environment {
+    // API тепер слухає порт 8090 (уникаємо конфлікту з Jenkins)
+    CARS_API_BASE_URL = 'http://127.0.0.1:8090'
+    CARS_API_USER     = 'test_user'
+    CARS_API_PASS     = 'test_pass'
+
+    VENV = '.venv'
+    PATH = "${WORKSPACE}/${VENV}/bin:${PATH}"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Setup Python') {
+      steps {
+        sh '''
+          python3 -m venv "$VENV"
+          . "$VENV/bin/activate"
+          python -m pip install --upgrade pip
+
+          # Встановлюємо залежності з Lesson_31 або fallback
+          if [ -f Lesson_31/requirements.txt ]; then
+            pip install -r Lesson_31/requirements.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install pytest requests flask flask-jwt-extended allure-pytest selenium
+          fi
+        '''
+      }
+    }
+
+    stage('Boot API (background)') {
+      steps {
+        sh '''
+          . "$VENV/bin/activate"
+
+          # Перемикаємо Flask API на порт 8090
+          sed -i 's/port=8080/port=8090/g; s/:8080/:8090/g' Lesson_30/cars_app.py || true
+
+          nohup python Lesson_30/cars_app.py > app.log 2>&1 &
+          echo $! > app.pid
+
+          # Чекаємо, поки API підніметься на 8090
+          python - <<'PY'
+import socket, time, sys
+host, port = "127.0.0.1", 8090
+for _ in range(60):
+    try:
+        s = socket.create_connection((host, port), 1)
+        s.close()
+        print("API is up")
+        sys.exit(0)
+    except OSError:
+        time.sleep(1)
+print("API failed to start", file=sys.stderr)
+sys.exit(1)
+PY
+        '''
+      }
+    }
+
+    stage('Run tests') {
+      steps {
+        sh '''
+          . "$VENV/bin/activate"
+          mkdir -p allure-results
+          # Запускаємо лише тести з Lesson_30
+          pytest Lesson_30 -q --maxfail=1 --alluredir=allure-results --junitxml=pytest-junit.xml
+        '''
+      }
+    }
+
+    stage('Publish test results') {
+      steps {
+        junit allowEmptyResults: true, testResults: 'pytest-junit.xml'
+
+        allure([
+          includeProperties: false,
+          jdk: '',
+          results: [[path: 'allure-results']]
+        ])
+      }
+    }
+  }
+
+  post {
+    always {
+      script {
+        // Акуратно зупиняємо API
+        def pidFile = "${WORKSPACE}/app.pid"
+        if (fileExists(pidFile)) {
+          def pid = readFile(pidFile).trim()
+          sh "kill ${pid} || true"
+        }
+      }
+
+      archiveArtifacts artifacts: 'app.log, pytest-junit.xml, allure-results/**, test_search.log', fingerprint: true
+
+      emailext(
+        to: 'InsertYour@Mail.Here',
+        subject: "Cars API: build #${env.BUILD_NUMBER} – ${currentBuild.currentResult}",
+        body: '''\
+<b>Результат:</b> ${currentBuild.currentResult}<br/>
+<b>Проєкт:</b> ${env.JOB_NAME}<br/>
+<b>Білд:</b> #${env.BUILD_NUMBER}<br/>
+<b>Гілка:</b> ${env.BRANCH_NAME}<br/>
+<b>Деталі:</b> ${env.BUILD_URL}<br/>
+<br/>
+<b>JUnit:</b> вкладка 'Test Result'.<br/>
+<b>Allure:</b> вкладка 'Allure Report'.<br/>
+''',
+        mimeType: 'text/html'
+      )
+    }
+  }
+}

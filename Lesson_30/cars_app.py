@@ -83,6 +83,6 @@ def get_cars():
 
 
 if __name__ == '__main__':
-    host = '127.0.0.1'
-    port = 8080
+    host = '0.0.0.0'  # щоб Flask слухав з контейнера
+    port = 8090       # не конфліктує з Jenkins
     app.run(host=host, port=port, debug=True)
