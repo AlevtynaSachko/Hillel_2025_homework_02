@@ -77,7 +77,7 @@ PY
           . "$VENV/bin/activate"
           mkdir -p allure-results
           # ✅ обмежуємо тести, щоб не чіпати Lesson_27
-          pytest Lesson_31 -q --maxfail=1 --alluredir=allure-results --junitxml=pytest-junit.xml
+          pytest Lesson_30 -q --maxfail=1 --alluredir=allure-results --junitxml=pytest-junit.xml
         '''
       }
     }
