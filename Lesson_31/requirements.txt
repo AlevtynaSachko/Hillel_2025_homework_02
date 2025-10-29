@@ -1,0 +1,8 @@
+# Runtime (API)
+Flask==3.0.3
+Flask-JWT-Extended==4.6.0
+
+# Tests
+pytest==8.3.2
+requests==2.32.3
+allure-pytest==2.13.5
