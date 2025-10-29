@@ -7,22 +7,23 @@ pipeline {
   }
 
   triggers {
+    // Автозапуск після пуша (вебхук) або резервно кожні ~30 хв
     pollSCM('H/30 * * * *')
   }
 
   environment {
-    CARS_API_BASE_URL = 'http://127.0.0.1:8080'
+    // Порт API зміщено на 8090, щоб не конфліктувати з Jenkins (8080)
+    CARS_API_BASE_URL = 'http://127.0.0.1:8090'
     CARS_API_USER     = 'test_user'
     CARS_API_PASS     = 'test_pass'
+
     VENV = '.venv'
     PATH = "${WORKSPACE}/${VENV}/bin:${PATH}"
   }
 
   stages {
     stage('Checkout') {
-      steps {
-        checkout scm
-      }
+      steps { checkout scm }
     }
 
     stage('Setup Python') {
@@ -32,15 +33,12 @@ pipeline {
           . "$VENV/bin/activate"
           python -m pip install --upgrade pip
 
-          # ✅ шукаємо requirements у Lesson_31
+          # Встановлюємо залежності з Lesson_31 або fallback (включно з selenium)
           if [ -f Lesson_31/requirements.txt ]; then
-            echo "Installing dependencies from Lesson_31/requirements.txt"
             pip install -r Lesson_31/requirements.txt
           elif [ -f requirements.txt ]; then
-            echo "Installing dependencies from root requirements.txt"
             pip install -r requirements.txt
           else
-            echo "Installing fallback packages"
             pip install pytest requests flask flask-jwt-extended allure-pytest selenium
           fi
         '''
@@ -51,15 +49,21 @@ pipeline {
       steps {
         sh '''
           . "$VENV/bin/activate"
-          nohup python cars_app.py > app.log 2>&1 &
-          APP_PID=$!
-          echo $APP_PID > app.pid
 
+          # Переключаємо Flask на порт 8090 (щоб не конфліктувати з Jenkins 8080)
+          sed -i 's/port=8080/port=8090/g; s/:8080/:8090/g' cars_app.py || true
+
+          nohup python cars_app.py > app.log 2>&1 &
+          echo $! > app.pid
+
+          # Чекаємо підняття API на 8090
           python - <<'PY'
 import socket, time, sys
+host, port = "127.0.0.1", 8090
 for _ in range(60):
     try:
-        s = socket.create_connection(("127.0.0.1",8080),1); s.close()
+        s = socket.create_connection((host, port), 1)
+        s.close()
         print("API is up")
         sys.exit(0)
     except OSError:
@@ -76,7 +80,7 @@ PY
         sh '''
           . "$VENV/bin/activate"
           mkdir -p allure-results
-          # ✅ обмежуємо тести, щоб не чіпати Lesson_27
+          # Запускаємо лише актуальні тести
           pytest Lesson_30 -q --maxfail=1 --alluredir=allure-results --junitxml=pytest-junit.xml
         '''
       }
@@ -84,7 +88,10 @@ PY
 
     stage('Publish test results') {
       steps {
+        // JUnit (вбудовано в Jenkins)
         junit allowEmptyResults: true, testResults: 'pytest-junit.xml'
+
+        // Allure (потрібен Allure Jenkins Plugin + Tools→Allure Commandline)
         allure([
           includeProperties: false,
           jdk: '',
@@ -97,12 +104,14 @@ PY
   post {
     always {
       script {
+        // Акуратно зупиняємо API
         def pidFile = "${WORKSPACE}/app.pid"
         if (fileExists(pidFile)) {
           def pid = readFile(pidFile).trim()
           sh "kill ${pid} || true"
         }
       }
+
       archiveArtifacts artifacts: 'app.log, pytest-junit.xml, allure-results/**, test_search.log', fingerprint: true
 
       emailext(
@@ -115,8 +124,8 @@ PY
 <b>Гілка:</b> ${env.BRANCH_NAME}<br/>
 <b>Деталі:</b> ${env.BUILD_URL}<br/>
 <br/>
-<b>JUnit:</b> див. вкладку 'Test Result' у білді.<br/>
-<b>Allure:</b> див. вкладку 'Allure Report'.<br/>
+<b>JUnit:</b> вкладка 'Test Result'.<br/>
+<b>Allure:</b> вкладка 'Allure Report'.<br/>
 ''',
         mimeType: 'text/html'
       )
