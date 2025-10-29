@@ -3,28 +3,22 @@ pipeline {
 
   options {
     timestamps()
-    ansiColor('xterm')
     buildDiscarder(logRotator(numToKeepStr: '15'))
   }
 
   triggers {
-    // Автоматичний запуск після кожного коміту або кожні 30 хв
     pollSCM('H/30 * * * *')
   }
 
   environment {
-    // Базові змінні
     CARS_API_BASE_URL = 'http://127.0.0.1:8080'
     CARS_API_USER     = 'test_user'
     CARS_API_PASS     = 'test_pass'
-
-    // Віртуальне середовище Python
     VENV = '.venv'
     PATH = "${WORKSPACE}/${VENV}/bin:${PATH}"
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
@@ -34,15 +28,19 @@ pipeline {
     stage('Setup Python') {
       steps {
         sh '''
-          python3 --version || true
           python3 -m venv "$VENV"
           . "$VENV/bin/activate"
           python -m pip install --upgrade pip
 
-          # Встановлюємо залежності саме з Lesson_31, або fallback
+          # ✅ шукаємо requirements у Lesson_31
           if [ -f Lesson_31/requirements.txt ]; then
+            echo "Installing dependencies from Lesson_31/requirements.txt"
             pip install -r Lesson_31/requirements.txt
+          elif [ -f requirements.txt ]; then
+            echo "Installing dependencies from root requirements.txt"
+            pip install -r requirements.txt
           else
+            echo "Installing fallback packages"
             pip install pytest requests flask flask-jwt-extended allure-pytest selenium
           fi
         '''
@@ -57,14 +55,11 @@ pipeline {
           APP_PID=$!
           echo $APP_PID > app.pid
 
-          # Перевіряємо, чи API піднявся
           python - <<'PY'
 import socket, time, sys
-host, port = "127.0.0.1", 8080
-for i in range(60):
+for _ in range(60):
     try:
-        s = socket.create_connection((host, port), 1)
-        s.close()
+        s = socket.create_connection(("127.0.0.1",8080),1); s.close()
         print("API is up")
         sys.exit(0)
     except OSError:
@@ -81,7 +76,8 @@ PY
         sh '''
           . "$VENV/bin/activate"
           mkdir -p allure-results
-          pytest -q --maxfail=1 --alluredir=allure-results --junitxml=pytest-junit.xml
+          # ✅ обмежуємо тести, щоб не чіпати Lesson_27
+          pytest Lesson_31 -q --maxfail=1 --alluredir=allure-results --junitxml=pytest-junit.xml
         '''
       }
     }
@@ -89,7 +85,6 @@ PY
     stage('Publish test results') {
       steps {
         junit allowEmptyResults: true, testResults: 'pytest-junit.xml'
-
         allure([
           includeProperties: false,
           jdk: '',
@@ -102,14 +97,12 @@ PY
   post {
     always {
       script {
-        // Зупиняємо API, якщо воно ще працює
         def pidFile = "${WORKSPACE}/app.pid"
         if (fileExists(pidFile)) {
           def pid = readFile(pidFile).trim()
           sh "kill ${pid} || true"
         }
       }
-
       archiveArtifacts artifacts: 'app.log, pytest-junit.xml, allure-results/**, test_search.log', fingerprint: true
 
       emailext(
