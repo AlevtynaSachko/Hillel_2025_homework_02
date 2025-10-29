@@ -7,12 +7,12 @@ pipeline {
   }
 
   triggers {
-    // Автозапуск після пуша (вебхук) або резервно кожні ~30 хв
+    // Автозапуск після пуша або резервно кожні 30 хв
     pollSCM('H/30 * * * *')
   }
 
   environment {
-    // Порт API зміщено на 8090, щоб не конфліктувати з Jenkins (8080)
+    // API тепер слухає порт 8090 (уникаємо конфлікту з Jenkins)
     CARS_API_BASE_URL = 'http://127.0.0.1:8090'
     CARS_API_USER     = 'test_user'
     CARS_API_PASS     = 'test_pass'
@@ -33,7 +33,7 @@ pipeline {
           . "$VENV/bin/activate"
           python -m pip install --upgrade pip
 
-          # Встановлюємо залежності з Lesson_31 або fallback (включно з selenium)
+          # Встановлюємо залежності з Lesson_31 або fallback
           if [ -f Lesson_31/requirements.txt ]; then
             pip install -r Lesson_31/requirements.txt
           elif [ -f requirements.txt ]; then
@@ -50,13 +50,13 @@ pipeline {
         sh '''
           . "$VENV/bin/activate"
 
-          # Переключаємо Flask на порт 8090 (щоб не конфліктувати з Jenkins 8080)
-          sed -i 's/port=8080/port=8090/g; s/:8080/:8090/g' cars_app.py || true
+          # Перемикаємо Flask API на порт 8090
+          sed -i 's/port=8080/port=8090/g; s/:8080/:8090/g' Lesson_30/cars_app.py || true
 
-          nohup python cars_app.py > app.log 2>&1 &
+          nohup python Lesson_30/cars_app.py > app.log 2>&1 &
           echo $! > app.pid
 
-          # Чекаємо підняття API на 8090
+          # Чекаємо, поки API підніметься на 8090
           python - <<'PY'
 import socket, time, sys
 host, port = "127.0.0.1", 8090
@@ -80,7 +80,7 @@ PY
         sh '''
           . "$VENV/bin/activate"
           mkdir -p allure-results
-          # Запускаємо лише актуальні тести
+          # Запускаємо лише тести з Lesson_30
           pytest Lesson_30 -q --maxfail=1 --alluredir=allure-results --junitxml=pytest-junit.xml
         '''
       }
@@ -88,10 +88,8 @@ PY
 
     stage('Publish test results') {
       steps {
-        // JUnit (вбудовано в Jenkins)
         junit allowEmptyResults: true, testResults: 'pytest-junit.xml'
 
-        // Allure (потрібен Allure Jenkins Plugin + Tools→Allure Commandline)
         allure([
           includeProperties: false,
           jdk: '',
