@@ -8,13 +8,12 @@ pipeline {
   }
 
   triggers {
-    // Ранить pipeline після кожного пуша (за наявності вебхука).
-    // Якщо вебхука немає — резервно опитуємо SCM щопівгодини.
+    // Автоматичний запуск після кожного коміту або кожні 30 хв
     pollSCM('H/30 * * * *')
   }
 
   environment {
-    // Базовий URL API та креденшли з test-користувача (див. conftest.py)
+    // Базові змінні
     CARS_API_BASE_URL = 'http://127.0.0.1:8080'
     CARS_API_USER     = 'test_user'
     CARS_API_PASS     = 'test_pass'
@@ -25,6 +24,7 @@ pipeline {
   }
 
   stages {
+
     stage('Checkout') {
       steps {
         checkout scm
@@ -38,10 +38,12 @@ pipeline {
           python3 -m venv "$VENV"
           . "$VENV/bin/activate"
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
+
+          # Встановлюємо залежності саме з Lesson_31, або fallback
+          if [ -f Lesson_31/requirements.txt ]; then
+            pip install -r Lesson_31/requirements.txt
           else
-            pip install pytest requests flask flask-jwt-extended allure-pytest
+            pip install pytest requests flask flask-jwt-extended allure-pytest selenium
           fi
         '''
       }
@@ -54,13 +56,14 @@ pipeline {
           nohup python cars_app.py > app.log 2>&1 &
           APP_PID=$!
           echo $APP_PID > app.pid
+
+          # Перевіряємо, чи API піднявся
           python - <<'PY'
 import socket, time, sys
 host, port = "127.0.0.1", 8080
 for i in range(60):
-    s = socket.socket()
     try:
-        s.connect((host, port))
+        s = socket.create_connection((host, port), 1)
         s.close()
         print("API is up")
         sys.exit(0)
@@ -86,6 +89,7 @@ PY
     stage('Publish test results') {
       steps {
         junit allowEmptyResults: true, testResults: 'pytest-junit.xml'
+
         allure([
           includeProperties: false,
           jdk: '',
@@ -98,6 +102,7 @@ PY
   post {
     always {
       script {
+        // Зупиняємо API, якщо воно ще працює
         def pidFile = "${WORKSPACE}/app.pid"
         if (fileExists(pidFile)) {
           def pid = readFile(pidFile).trim()
